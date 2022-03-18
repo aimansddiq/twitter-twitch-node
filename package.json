@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "node-fetch": "^3.2.1",
+    "node-libcurl": "^2.3.4",
+    "twitter-lite": "^1.1.0"
+  },
+  "name": "twitter-twitch-node",
+  "version": "1.0.0",
+  "description": "Tweet once Twitch channel going live",
+  "main": "config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Qidds",
+  "license": "ISC",
+  "type": "module"
+}
