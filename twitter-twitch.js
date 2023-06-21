@@ -12,9 +12,9 @@ const twitterUserClient = new TwitterApi({
     accessToken: process.env.ACCESS_TOKEN_KEY,
     accessSecret: process.env.ACCESS_TOKEN_SECRET,
 });
-const channels = {
-    /* twitch_username: twitter_username */
-};
+
+// Add your channels in channels.json
+const channels = JSON.parse(fs.readFileSync('channels.json')).channels;
 const oauth = {
     twitch_client_id: process.env.TWITCH_CLIENT_ID,
     twitch_token: process.env.TWITCH_TOKEN,
@@ -106,7 +106,7 @@ const main = async function (mode = MODE.LIVE) {
                     tweet_message(`This is a test\n${message}`);
                     console.log(message);
                 }
-                // console.log("Tweeted " + channel_name);
+                console.log("Tweeted " + channel_name);
                 tweeted_dict[channel_name] = true;
             }
         } else {
