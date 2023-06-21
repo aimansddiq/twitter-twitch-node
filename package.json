@@ -1,25 +1,26 @@
 {
-  "dependencies": {
-    "node-fetch": "^3.2.1",
-    "node-libcurl": "^2.3.4",
-    "twitter-lite": "^1.1.0"
-  },
   "name": "twitter-twitch-node",
   "version": "1.0.0",
-  "description": "Tweet once Twitch channel going live",
+  "description": "Tweet once Twitch channel went live",
   "main": "config.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Qidds",
-  "license": "ISC",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aimansddiq/twitter-twitch-node.git"
   },
+  "author": "qidds",
+  "license": "ISC",
   "bugs": {
     "url": "https://github.com/aimansddiq/twitter-twitch-node/issues"
   },
-  "homepage": "https://github.com/aimansddiq/twitter-twitch-node#readme"
+  "homepage": "https://github.com/aimansddiq/twitter-twitch-node#readme",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "fs": "^0.0.1-security",
+    "node-fetch": "^3.2.1",
+    "twitter-api-v2": "^1.15.0"
+  }
 }

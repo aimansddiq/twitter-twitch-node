@@ -1,69 +1,112 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+import fs from 'fs';
 import fetch from "node-fetch";
-import twitter from "twitter-lite";
+import { TwitterApi } from 'twitter-api-v2';
+
+dotenv.config();
 
 //CONFIGS
-const twitter_client = new twitter({
-    consumer_key: process.env.CONSUMER_KEY,
-    consumer_secret: process.env.CONSUMER_SECRET,
-    access_token_key: process.env.ACCESS_TOKEN_KEY,
-    access_token_secret: process.env.ACCESS_TOKEN_SECRET
+const twitterUserClient = new TwitterApi({
+    appKey: process.env.CONSUMER_KEY,
+    appSecret: process.env.CONSUMER_SECRET,
+    accessToken: process.env.ACCESS_TOKEN_KEY,
+    accessSecret: process.env.ACCESS_TOKEN_SECRET,
 });
 const channels = {
-    //twitch_username: twitter_username
+    /* twitch_username: twitter_username */
 };
 const oauth = {
     twitch_client_id: process.env.TWITCH_CLIENT_ID,
+    twitch_token: process.env.TWITCH_TOKEN,
     twitch_secret: process.env.TWITCH_SECRET,
 };
 
+const MODE = Object.freeze({
+    LIVE: 'live',
+    DEV: 'dev',
+})
+
 //FUNCTIONS
-const tweet_message = function (message) {
-    twitter_client
-        .post("statuses/update", { status: message })
-        .then(() => {
-            console.log("Tweet posted");
-        })
-        .catch(console.error);
+const tweet_message = async (message) => {
+    const createdTweet = await twitterUserClient.v2.tweet('This is api test 2');
+    return 'data' in createdTweet
 };
 
 const check_online = async function (channel_name) {
-    try {
+    let status = false;
+    do {
+        const url = "https://api.twitch.tv/helix/streams?user_login=" + channel_name
         const resp = await fetch(
-            "https://api.twitch.tv/helix/streams?user_login=" + channel_name,
+            url,
             {
                 headers: {
                     "Client-ID": oauth.twitch_client_id,
-                    Authorization: "Bearer " + oauth.twitch_secret,
+                    Authorization: "Bearer " + oauth.twitch_token,
                 },
             }
         );
         const response = await resp.json();
-        let online_status = false;
-        if (response.data.length != 0) {
-            online_status = response;
+        status = 'data' in response;
+        if (!status) {
+            await auth_request();
+            continue;
         }
-        return online_status;
-    } catch (err) {
-        console.log(err);
-        document.getElementById("user_data").textContent = "Something went wrong";
-    }
+
+        return response.data.length > 0 ? response : false;
+    } while (!status)
 };
 
-let tweeted_dict = {}; //KEEP TRACK OF TWEETED ALERTS
-const main = async function () {
-    for (let channel_name of channels) {
+const auth_request = async () => {
+    const url = 'https://id.twitch.tv/oauth2/token';
+    const formdata = new FormData();
+    formdata.append("client_id", oauth.twitch_client_id);
+    formdata.append("client_secret", oauth.twitch_secret);
+    formdata.append("grant_type", "client_credentials");
+
+    const response = await fetch(url, {
+        method: 'POST',
+        body: formdata,
+    });
+
+    const data = await response.json();
+    if (data && 'access_token' in data) {
+        updateEnvTwitchToken(data.access_token);
+        oauth.twitch_token = data.access_token;
+    } else {
+        console.error('Error: ' + data.message);
+    }
+}
+
+const updateEnvTwitchToken = (access_token) => {
+    const envFilePath = '.env';
+    const envFileContent = fs.readFileSync(envFilePath, 'utf8');
+    const updatedEnvFileContent = envFileContent.replace(
+        /^TWITCH_TOKEN=.*/gm,
+        `TWITCH_TOKEN="${access_token}"`
+    );
+    fs.writeFileSync(envFilePath, updatedEnvFileContent, { flag: 'w' });
+}
+
+// Keep track of tweeted alerts
+let tweeted_dict = Object.fromEntries(Object.keys(channels).map(channel_name => [channel_name, false]));
+console.log(tweeted_dict);
+const main = async function (mode = MODE.LIVE) {
+    for (let channel_name in channels) {
         let response = await check_online(channel_name);
-        if (response != false) {
+        if (response) {
             let data = response.data[0];
             let game_title = data.game_name;
             let stream_title = data.title;
-            let message = `~ @" ${channels[channel_name] ?? channel_name} is now live playing ${game_title} \n\n ${stream_title} \nhttps://www.twitch.tv/${channel_name}`;
+            let message = `~ @${channels[channel_name] || channel_name} is now live playing ${game_title} \n\n ${stream_title} \nhttps://www.twitch.tv/${channel_name}`;
 
-            if (channel_name in tweeted_dict && !tweeted_dict[channel_name]) {
-                tweet_message(message);
-                console.log(message);
-                console.log("Tweeted " + channel_name);
+            if (!tweeted_dict[channel_name]) {
+                if (mode === MODE.LIVE) {
+                    tweet_message(message);
+                } else {
+                    tweet_message(`This is a test\n${message}`);
+                    console.log(message);
+                }
+                // console.log("Tweeted " + channel_name);
                 tweeted_dict[channel_name] = true;
             }
         } else {
@@ -76,7 +119,6 @@ const main = async function () {
 let i = 0;
 console.log("iteration " + i);
 main();
-console.log(tweeted_dict);
 i++;
 setInterval(() => {
     console.log("iteration " + i);
